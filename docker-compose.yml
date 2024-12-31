@@ -1,0 +1,36 @@
+services:
+  web-server:
+    build:
+      context: ./web-server
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=postgres://user:password@db:5432/media
+    depends_on:
+      - db
+    volumes:
+      - ./web-server/src:/app/src
+    restart: unless-stopped
+  
+  media-server:
+    build:
+      context: ./media-server
+    ports:
+      - "8081:8081"
+    volumes:
+      - ${MEDIA_PATH}:/app/media
+    environment:
+      - MEDIA_PATH=${MEDIA_PATH}
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres@latest
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=media
+    volumes:
+      -./db/init.sql:/docker-entrypoint-initdb.d/init.sql
+    restart: unless-stopped

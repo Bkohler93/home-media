@@ -23,3 +23,12 @@ go.work.sum
 
 # env file
 .env
+
+# media-server
+/media-server/media
+/media-server/bin
+
+# web-server
+/web-server/bin
+/web-server/ui/dist
+/web-server/ui/node_modules
