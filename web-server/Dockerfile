@@ -34,8 +34,6 @@ RUN go mod tidy
 # Build go app
 RUN go build -o /go/bin/app
 
-RUN ls -la /go/bin
-
 # Stage 3: Final image
 FROM alpine:latest
 
@@ -47,8 +45,6 @@ WORKDIR /app
 
 # Copy Go binary from build stage
 COPY --from=go-build /go/bin/app /app
-
-RUN ls -la /app
 
 # Expose port
 EXPOSE 8080
