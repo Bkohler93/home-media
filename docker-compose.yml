@@ -8,8 +8,6 @@ services:
       - DATABASE_URL=postgres://user:password@db:5432/media
     depends_on:
       - db
-    volumes:
-      - ./web-server/src:/app/src
     restart: unless-stopped
   
   media-server:
@@ -21,6 +19,7 @@ services:
       - ${MEDIA_HOST_PATH}:/app/media
     environment:
       - MEDIA_DIR=/app/media
+      - DATABASE_URL=postgres://user:password@db:5432/media
     depends_on:
       - db
     restart: unless-stopped
