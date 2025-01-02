@@ -48,7 +48,7 @@ interface Movie {
 // Home component displaying movies
 const Home: React.FC = () => {
   const movies: Movie[] = [
-    { id: 1, title: 'Interstellar', thumbnail: '/path/to/thumbnail1.jpg', url: 'http://192.168.0.8:8081/stream/movies/Interstellar.mp4' },
+    { id: 1, title: 'Interstellar', thumbnail: '/path/to/thumbnail1.jpg', url: 'localhost:8081/stream/movies/Interstellar.mp4' },
     { id: 2, title: 'Movie 2', thumbnail: '/path/to/thumbnail2.jpg', url: '/path/to/movie2.mp4' },
   ];
 
@@ -83,14 +83,14 @@ const TVShows: React.FC = () => (
 // MoviePlayer component
 const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
   const movies: Record<string, Movie> = {
-    '1': { id: 1, title: 'Interstellar', thumbnail: '', url: 'http://192.168.0.8:8081/stream/movies/Interstellar.mp4' },
+    '1': { id: 1, title: 'Eternal Sunshine of the Spotless Mind', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/Eternal_Sunshine_Of_The_Spotless_Mind.mp4' },
     '2': { id: 2, title: 'Movie 2', thumbnail: '', url: '/path/to/movie2.mp4' },
   };
 
   const movie = movies[id];
 
   if (!movie) return <div>Movie not found</div>;
-
+  console.log(movie.url)
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">{movie.title}</h2>

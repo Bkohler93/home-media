@@ -13,6 +13,14 @@ RUN yarn install
 # copy ui files
 COPY ui/ ./
 
+# Pass the environment variable to the Vite build process
+ARG BASE_URL
+ARG VITE_BASE_URL 
+ENV VITE_BASE_URL=${BASE_URL}
+
+RUN echo "VITE_BASE_URL is: $VITE_BASE_URL"
+RUN echo "BASE_URL is: ${BASE_URL}"
+
 # build React app
 RUN yarn build
 
@@ -26,7 +34,7 @@ WORKDIR /go/src/app
 COPY . .
 
 # copy React app from ui-build step
-COPY --from=ui-build /ui/dist /go/src/app/dist
+COPY --from=ui-build /ui/dist /go/src/app/ui/dist
 
 # Install dependencies
 RUN go mod tidy

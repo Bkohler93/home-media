@@ -2,6 +2,8 @@ services:
   web-server:
     build:
       context: ./web-server
+      args:
+        BASE_URL: ${HOST_URL}
     ports:
       - "8080:8080"
     environment:
