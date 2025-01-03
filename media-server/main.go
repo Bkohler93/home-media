@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -35,12 +36,7 @@ func main() {
 
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders: []string{"Authorization", "X-Requested-With", "X-Request-ID", "X-HTTP-Method-Override", "Upload-Length", "Upload-Offset", "Tus-Resumable", "Upload-Metadata", "Upload-Defer-Length", "Upload-Concat", "User-Agent", "Referrer", "Origin", "Content-Type", "Content-Length"},
-		ExposedHeaders: []string{"Upload-Offset", "Location", "Upload-Length", "Tus-Version", "Tus-Resumable", "Tus-Max-Size", "Tus-Extension", "Upload-Metadata", "Upload-Defer-Length", "Upload-Concat", "Location", "Upload-Offset", "Upload-Length"},
-	}))
+	r.Use(cors.AllowAll().Handler)
 
 	mediaDir := os.Getenv("MEDIA_DIR")
 	if mediaDir == "" {
@@ -51,18 +47,40 @@ func main() {
 	r.Get("/test", func(w http.ResponseWriter, r *http.Request) { w.Write([]byte("Hello from media server")) })
 	r.Handle("/stream/*", http.StripPrefix("/stream/", http.FileServer(http.FS(fsys))))
 
-	r.Handle("/files/", http.StripPrefix("/files/", handler))
 	r.Handle("/files", http.StripPrefix("/files", handler))
-
-	// r.Options("/files", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Header().Set("Access-Control-Allow-Origin", "*")
-	// 	w.WriteHeader(http.StatusOK) // Respond to preflight request
-	// })
+	r.Handle("/files/*", http.StripPrefix("/files/", handler))
 
 	go func() {
 		for {
 			event := <-handler.CompleteUploads
-			log.Printf("Upload %s finished\n", event.Upload.ID)
+			uploadedFilePath := "./uploads/" + event.Upload.ID
+			uploadedFileInfoPath := uploadedFilePath + ".info"
+			newFilePath := mediaDir + "/movies/The_Penguin_S01E04_2024.mp4"
+
+			uploadedF, err := os.Open(uploadedFilePath)
+			if err != nil {
+				log.Println("failed to open uploaded file", err)
+				return
+			}
+
+			newF, err := os.Create(newFilePath)
+			if err != nil {
+				log.Println("failed to open new file to write to", err)
+				return
+			}
+
+			_, err = io.Copy(newF, uploadedF)
+			if err != nil {
+				log.Println("failed to copy data...", err)
+				return
+			}
+
+			log.Println("Created and transferred file")
+
+			uploadedF.Close()
+			newF.Close()
+			os.Remove(uploadedFilePath)
+			os.Remove(uploadedFileInfoPath)
 		}
 	}()
 

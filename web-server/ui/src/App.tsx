@@ -59,7 +59,7 @@ interface Movie {
 // Home component displaying movies
 const Home: React.FC = () => {
   const movies: Movie[] = [
-    { id: 1, title: 'Interstellar', thumbnail: '/path/to/thumbnail1.jpg', url: 'localhost:8081/stream/movies/Interstellar.mp4' },
+    { id: 1, title: 'The Penguin S01 E04', thumbnail: '/path/to/thumbnail1.jpg', url: 'localhost:8081/stream/movies/Interstellar.mp4' },
     { id: 2, title: 'Movie 2', thumbnail: '/path/to/thumbnail2.jpg', url: '/path/to/movie2.mp4' },
   ];
 
@@ -106,7 +106,7 @@ const Upload: React.FC = () => {
     event.preventDefault();
     if (!file) return;
 
-    var upload = new tus.Upload(file, {
+    const upload = new tus.Upload(file, {
       endpoint: import.meta.env.VITE_BASE_URL + ':8081/files/',
       retryDelays: [0, 3000, 5000, 10000, 20000],
       metadata: {
@@ -117,7 +117,7 @@ const Upload: React.FC = () => {
         console.log('Failed because: ' + error)
       },
       onProgress: function (bytesUploaded, bytesTotal) {
-        var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2)
+        const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2)
         console.log(bytesUploaded, bytesTotal, percentage + '%')
       },
       onSuccess: function () {
@@ -155,7 +155,7 @@ const Upload: React.FC = () => {
 // MoviePlayer component
 const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
   const movies: Record<string, Movie> = {
-    '1': { id: 1, title: 'Interstellar', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/Interstellar.mp4' },
+    '1': { id: 1, title: 'The Penguin S01 E04', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/The_Penguin_S01E04_2024.mp4' },
     '2': { id: 2, title: 'Movie 2', thumbnail: '', url: '/path/to/movie2.mp4' },
   };
 
