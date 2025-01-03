@@ -1,5 +1,6 @@
 import React from 'react';
 import './App.css'
+import * as tus from 'tus-js-client';
 import { BrowserRouter, NavLink, Route, Routes, useParams } from 'react-router-dom';
 import ReactPlayer from 'react-player';
 
@@ -28,6 +29,16 @@ const Layout: React.FC<{children: React.ReactNode}> = ({ children }) => (
         }
       >
         TV Shows
+      </NavLink>
+      <NavLink
+      to="/upload"
+      className={({ isActive }) =>
+        `block mb-2 px-2 py-1 rounded ${
+          isActive ? 'bg-blue-600 text-white':'hover:bg-gray-700'
+        }`
+      } 
+      >
+        Upload
       </NavLink>
     </div><div>
 
@@ -80,17 +91,78 @@ const TVShows: React.FC = () => (
   </div>
 );
 
+const Upload: React.FC = () => {
+  const [file, setFile] = React.useState<File | undefined>();
+
+  const handleFileChange = (event : React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = event.target.files;
+
+    if (!fileList) return;
+
+    setFile(fileList[0])
+  }
+
+  const handleSubmit = (event : React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!file) return;
+
+    var upload = new tus.Upload(file, {
+      endpoint: import.meta.env.VITE_BASE_URL + ':8081/files/',
+      retryDelays: [0, 3000, 5000, 10000, 20000],
+      metadata: {
+        filename: file.name,
+        filetype: file.type,
+      },
+      onError: function (error) {
+        console.log('Failed because: ' + error)
+      },
+      onProgress: function (bytesUploaded, bytesTotal) {
+        var percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2)
+        console.log(bytesUploaded, bytesTotal, percentage + '%')
+      },
+      onSuccess: function () {
+        if (upload.file instanceof File) {
+          console.log('Download %s from %s', upload.file.name, upload.url)
+        }
+      },
+    })
+
+  // Check if there are any previous uploads to continue.
+  upload.findPreviousUploads().then(function (previousUploads) {
+    // Found previous uploads so we select the first one.
+    if (previousUploads.length) {
+      upload.resumeFromPreviousUpload(previousUploads[0])
+    }
+
+    // Start the upload
+    upload.start()
+  })    
+  
+  }
+
+  return (
+  <div>
+    <form onSubmit={handleSubmit}>
+      <h1>Upload Movie</h1>
+      <input type="file" multiple={false} onChange={handleFileChange}/>
+
+      <button type="submit">Upload</button>
+    </form>
+  </div>
+  );
+}
+
 // MoviePlayer component
 const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
   const movies: Record<string, Movie> = {
-    '1': { id: 1, title: 'Eternal Sunshine of the Spotless Mind', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/Eternal_Sunshine_Of_The_Spotless_Mind.mp4' },
+    '1': { id: 1, title: 'Interstellar', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/Interstellar.mp4' },
     '2': { id: 2, title: 'Movie 2', thumbnail: '', url: '/path/to/movie2.mp4' },
   };
 
   const movie = movies[id];
+  console.log(movie.url);
 
   if (!movie) return <div>Movie not found</div>;
-  console.log(movie.url)
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">{movie.title}</h2>
@@ -113,6 +185,7 @@ const App: React.FC = () => {
           <Route path="/" element={<Home />} />
           <Route path="/tv-shows" element={<TVShows />} />
           <Route path="/movie/:id" element={<MoviePlayerWrapper />} />
+          <Route path="/upload" element={<Upload />} />
         </Routes>
       </Layout>
     </BrowserRouter>

@@ -2,7 +2,7 @@ build:
 	go build -o ./bin/app .
 
 run: build
-	./bin/app
+	MEDIA_DIR=./media ./bin/app
 
 docker-build:
 	docker build -t media-server-tmp .
