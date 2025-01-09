@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import './App.css'
 import * as tus from 'tus-js-client';
 import { BrowserRouter, NavLink, Route, Routes, useParams } from 'react-router-dom';
@@ -52,16 +52,27 @@ const Layout: React.FC<{children: React.ReactNode}> = ({ children }) => (
 interface Movie {
   id: number;
   title: string;
-  thumbnail: string;
-  url: string;
+  imgUrl: string;
+  filePath: string;
+  releaseYear: number;
 }
 
 // Home component displaying movies
 const Home: React.FC = () => {
-  const movies: Movie[] = [
-    { id: 1, title: 'The Penguin S01 E04', thumbnail: '/path/to/thumbnail1.jpg', url: 'localhost:8081/stream/movies/Interstellar.mp4' },
-    { id: 2, title: 'Movie 2', thumbnail: '/path/to/thumbnail2.jpg', url: '/path/to/movie2.mp4' },
-  ];
+  const [movies, setMovies] = useState<Movie[]>([]);
+  // const movies: Movie[] = [
+  //   { id: 1, title: 'The Penguin S01 E04', thumbnail: '/path/to/thumbnail1.jpg', url: 'localhost:8081/stream/movies/Interstellar.mp4' },
+  //   { id: 2, title: 'Movie 2', thumbnail: '/path/to/thumbnail2.jpg', url: '/path/to/movie2.mp4' },
+  // ];
+  useEffect(()=>{
+    fetch(import.meta.env.VITE_BASE_URL + ":8080/movies")
+      .then((res) => {
+        res.json().then((data : Movie[]) => {
+          console.log(data);
+          setMovies(data);
+        })
+      })
+  }, [])
 
   return (
     <div className="grid grid-cols-2 gap-4">
@@ -72,7 +83,7 @@ const Home: React.FC = () => {
           className="block text-center"
         >
           <img
-            src={movie.thumbnail}
+            src={movie.imgUrl}
             alt={movie.title}
             className="w-full h-48 object-cover rounded"
           />
@@ -91,8 +102,38 @@ const TVShows: React.FC = () => (
   </div>
 );
 
+enum UploadState {
+  Waiting,
+  Uploading,
+  Finished
+}
+
 const Upload: React.FC = () => {
   const [file, setFile] = React.useState<File | undefined>();
+  const [isTvShow, setIsTvShow] = useState<boolean>(false);
+  const [name, setName] = useState<string>("");
+  const [releaseYear, setReleaseYear] = useState<string>("");
+  const [seasonNumber, setSeasonNumber] = useState<string>("");
+  const [episodeNumber, setEpisodeNumber] = useState<string>("");
+  const [uploadState, setUploadState] = useState<UploadState>(UploadState.Waiting);
+  const [uploadPercentage, setUploadPercentage] = useState<string>("");
+  const [basePath, setBasePath] = useState<string>("/movies");
+
+  const handleNameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setName(event.target.value);
+  }
+
+  const handleReleaseYearChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setReleaseYear(event.target.value);
+  }
+
+  const handleSeasonChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSeasonNumber(event.target.value);
+  }
+
+  const handleEpisodeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setEpisodeNumber(event.target.value);
+  }
 
   const handleFileChange = (event : React.ChangeEvent<HTMLInputElement>) => {
     const fileList = event.target.files;
@@ -102,71 +143,144 @@ const Upload: React.FC = () => {
     setFile(fileList[0])
   }
 
-  const handleSubmit = (event : React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = () => {
     if (!file) return;
 
+    const metadata : {[key:string]: string}= {
+      "filename": file.name,
+      "filetype": file.type,
+      "name": name,
+      "releaseYear": releaseYear,
+    };
+
+    if (isTvShow) {
+      metadata["seasonNumber"] = seasonNumber;
+      metadata["episodeNumber"] = episodeNumber;
+    }
+
+
     const upload = new tus.Upload(file, {
-      endpoint: import.meta.env.VITE_BASE_URL + ':8081/files/',
+      endpoint: import.meta.env.VITE_BASE_URL + ':8081' + basePath,
       retryDelays: [0, 3000, 5000, 10000, 20000],
-      metadata: {
-        filename: file.name,
-        filetype: file.type,
-      },
+      metadata: metadata,
       onError: function (error) {
         console.log('Failed because: ' + error)
       },
       onProgress: function (bytesUploaded, bytesTotal) {
         const percentage = ((bytesUploaded / bytesTotal) * 100).toFixed(2)
-        console.log(bytesUploaded, bytesTotal, percentage + '%')
+        setUploadPercentage(percentage);
       },
       onSuccess: function () {
+        setUploadState(UploadState.Finished);
+        setUploadPercentage("");
         if (upload.file instanceof File) {
           console.log('Download %s from %s', upload.file.name, upload.url)
         }
       },
     })
+    
+    // Check if there are any previous uploads to continue.
+    upload.findPreviousUploads().then(function (previousUploads) {
+      // Found previous uploads so we select the first one.
+      if (previousUploads.length) {
+        upload.resumeFromPreviousUpload(previousUploads[0])
+      }
+      
+      // Start the upload
+      upload.start()
+      setUploadState(UploadState.Uploading);
+    })    
+  }
 
-  // Check if there are any previous uploads to continue.
-  upload.findPreviousUploads().then(function (previousUploads) {
-    // Found previous uploads so we select the first one.
-    if (previousUploads.length) {
-      upload.resumeFromPreviousUpload(previousUploads[0])
+  const handleIsTVShowChange = () => {
+    if (isTvShow) {
+      setBasePath("/movies")
+    } else {
+      setBasePath("/tv")
     }
+    setEpisodeNumber("");
+    setSeasonNumber("");
+    setIsTvShow(!isTvShow);
+  }
 
-    // Start the upload
-    upload.start()
-  })    
-  
+  const handleAnotherUpload = () => {
+    setUploadState(UploadState.Waiting);
   }
 
   return (
-  <div>
-    <form onSubmit={handleSubmit}>
-      <h1>Upload Movie</h1>
-      <input type="file" multiple={false} onChange={handleFileChange}/>
+  <div className='flex flex-col gap-3'>
+      <h1>Upload {isTvShow ? "TV Show" : "Movie"}</h1>
+      <div className='flex justify-center gap-3'>
+        <label htmlFor='isTvShow'>Is TV Show</label>
+        <input type="checkbox" name="isTvShow" onChange={handleIsTVShowChange}/>
+      </div> 
 
-      <button type="submit">Upload</button>
-    </form>
+      <div className='flex justify-center gap-3'>
+        <label htmlFor='filePicker'>Select file</label>
+        <input type="file" name='filePicker' multiple={false} onChange={handleFileChange}/>
+      </div> 
+
+      <div className='flex justify-center gap-3'>
+        <label htmlFor='name'>Name</label>
+        <input type="text" name='name' onChange={handleNameChange}/>
+      </div> 
+
+      {isTvShow &&
+      <>
+      <div className='flex justify-center gap-3'>
+        <label htmlFor='season'>Season Number</label>
+        <input type="text" name='season' onChange={handleSeasonChange}/> 
+      </div> 
+
+      <div className='flex justify-center gap-3'>
+        <label htmlFor='episode'>Episode Number</label>
+        <input type="text" name='episode' onChange={handleEpisodeChange}/>
+      </div> 
+
+      </>
+      }
+
+      <div className='gap-3 flex justify-center'>
+        <label htmlFor='releaseYear'>Release Year</label>
+        <input type="text" name='releaseYear' onChange={handleReleaseYearChange}/>
+      </div> 
+
+      {uploadState == UploadState.Uploading ?
+        <h2>{uploadPercentage}%</h2>
+      : uploadState == UploadState.Waiting ?
+      <button onClick={handleSubmit}>Upload</button>
+        : <button onClick={handleAnotherUpload}>Upload Another</button>
+    }
   </div>
   );
 }
 
 // MoviePlayer component
 const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
-  const movies: Record<string, Movie> = {
-    '1': { id: 1, title: 'The Penguin S01 E04', thumbnail: '', url: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/The_Penguin_S01E04_2024.mp4' },
-    '2': { id: 2, title: 'Movie 2', thumbnail: '', url: '/path/to/movie2.mp4' },
-  };
+  const [movie, setMovie] = useState<Movie | null>(null);
+  // const movies: Record<string, Movie> = {
+  //   '1': { id: 1, releaseYear: 2024, title: 'The Penguin S01 E04', imgUrl: '', filePath: import.meta.env.VITE_BASE_URL + ':8081/stream/movies/The_Penguin_S01E04_2024.mp4' },
+  //   '2': { id: 2, releaseYear: 2024, title: 'Movie 2', imgUrl: '', filePath: '/path/to/movie2.mp4' },
+  // };
 
-  const movie = movies[id];
-  console.log(movie.url);
+  // const movie = movies[id];
+  // console.log(movie.filePath);
+  useEffect(() => {
+    fetch(import.meta.env.VITE_BASE_URL + ":8080/movies/" + id)
+      .then((res) => {
+        res.json().then((data :Movie) => {
+          setMovie(data);
+        }).catch((err) => {
+          console.log(err);
+        })
+      })
+  });
 
   if (!movie) return <div>Movie not found</div>;
   return (
     <div>
       <h2 className="text-2xl font-bold mb-4">{movie.title}</h2>
-      <ReactPlayer url={movie.url} controls playing width="100%" />
+      <ReactPlayer url={import.meta.env.VITE_BASE_URL + ":8081" + movie.filePath} controls playing width="100%" />
     </div>
   );
 };
