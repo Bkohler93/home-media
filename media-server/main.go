@@ -129,6 +129,7 @@ func main() {
 				os.Remove(uploadedFilePath)
 				os.Remove(uploadedFileInfoPath)
 			case event := <-tvHandler.CompleteUploads:
+
 				uploadedFilePath := "./uploads/" + event.Upload.ID
 				uploadedFileInfoPath := uploadedFilePath + ".info"
 				uploadedF, err := os.Open(uploadedFilePath)
@@ -144,6 +145,9 @@ func main() {
 					continue
 				}
 				defer uploadedFileInfo.Close()
+				defer os.Remove(uploadedFilePath)
+				defer os.Remove(uploadedFileInfoPath)
+
 				tvData := getTVData(uploadedFileInfo)
 				underscoreName := strings.ReplaceAll(tvData.Name, " ", "_")
 
@@ -170,8 +174,6 @@ func main() {
 
 				log.Println("Created and transferred file")
 
-				os.Remove(uploadedFilePath)
-				os.Remove(uploadedFileInfoPath)
 			}
 		}
 	}()
