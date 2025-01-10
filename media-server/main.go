@@ -106,6 +106,7 @@ func main() {
 
 				newFilePath := mediaDir + "/movies/" + underscoreName + "_" + movieData.ReleaseYear + ".mp4"
 
+				os.MkdirAll("mediaDir"+"/movies", os.ModePerm)
 				newF, err := os.Create(newFilePath)
 				if err != nil {
 					log.Println("failed to open new file to write to", err)
