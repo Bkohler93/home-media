@@ -23,7 +23,10 @@ import (
 
 const port = "8081"
 
-var db *sql.DB
+var (
+	db       *sql.DB
+	mediaDir string
+)
 
 func main() {
 	var err error
@@ -62,7 +65,7 @@ func main() {
 	r.Use(middleware.Logger)
 	r.Use(cors.AllowAll().Handler)
 
-	mediaDir := os.Getenv("MEDIA_DIR")
+	mediaDir = os.Getenv("MEDIA_DIR")
 	if mediaDir == "" {
 		log.Fatal("MEDIA_DIR variable not set")
 	}
@@ -76,6 +79,8 @@ func main() {
 
 	r.Handle("/tv", http.StripPrefix("/tv", tvHandler))
 	r.Handle("/tv/*", http.StripPrefix("/tv/", tvHandler))
+
+	r.Delete("/delete/tv", deleteTVShow)
 
 	go func() {
 		for {
@@ -142,7 +147,7 @@ func main() {
 				tvData := getTVData(uploadedFileInfo)
 				underscoreName := strings.ReplaceAll(tvData.Name, " ", "_")
 
-				newFilePath := mediaDir + "/tv/" + underscoreName + "/" + underscoreName + "_" + tvData.SeasonNumber + "_" + tvData.EpisodeNumber + "_" + tvData.ReleaseYear + ".mp4"
+				newFilePath := mediaDir + "/tv/" + underscoreName + "/" + underscoreName + "_S" + tvData.SeasonNumber + "_E" + tvData.EpisodeNumber + "_" + tvData.ReleaseYear + ".mp4"
 
 				os.MkdirAll(mediaDir+"/tv/"+underscoreName, os.ModePerm)
 				newF, err := os.Create(newFilePath)
@@ -158,7 +163,7 @@ func main() {
 					continue
 				}
 
-				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_%s_%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
+				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_S%s_E%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
 				if err := storeTV(tvData, fileUrl); err != nil {
 					log.Printf("failed to store movie data - %v\n", err)
 				}
@@ -173,6 +178,22 @@ func main() {
 
 	fmt.Println("Listening on port", port)
 	http.ListenAndServe(":"+port, r)
+}
+
+func deleteTVShow(w http.ResponseWriter, r *http.Request) {
+	bytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error reading body - %v", err), http.StatusInternalServerError)
+		return
+	}
+	filePath := string(bytes)
+	filePath = strings.TrimPrefix(filePath, "/stream")
+
+	if err = os.Remove(mediaDir + filePath); err != nil {
+		http.Error(w, fmt.Sprintf("error deleting file - %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 type MovieMetaData struct {

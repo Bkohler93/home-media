@@ -5,9 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/bkohler93/home-media/web-server/ui"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	_ "github.com/lib/pq"
 )
@@ -24,17 +26,42 @@ func main() {
 	}
 	defer db.Close()
 	r := chi.NewRouter()
+	r.Use(middleware.Logger)
 	r.Use(cors.AllowAll().Handler)
 
 	r.Get("/movies", getMovies)
 	r.Get("/movies/{id}", getMovie)
 	r.Get("/tv_shows", getTVShows)
+	r.Delete("/tv_shows/{id}", deleteTVShow)
 
 	//register ui handlers after other endpoints
 	ui.RegisterHandlers(r)
 
 	fmt.Println("Listening port", port)
 	http.ListenAndServe(":"+port, r)
+}
+
+func deleteTVShow(w http.ResponseWriter, r *http.Request) {
+	id := chi.URLParam(r, "id")
+	row := db.QueryRow(`DELETE FROM tv_shows WHERE id = $1 RETURNING file_path;`, id)
+	var filePath string
+	row.Scan(&filePath)
+
+	req, err := http.NewRequest("DELETE", "http://media-server:8081/delete/tv", strings.NewReader(filePath))
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error creating request to media server - %v", err), http.StatusInternalServerError)
+		return
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error contacting media server - %v", err), http.StatusInternalServerError)
+		return
+	}
+	if res.StatusCode != http.StatusOK {
+		http.Error(w, fmt.Sprintf("error with media server status code %d", res.StatusCode), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func getMovie(w http.ResponseWriter, r *http.Request) {
