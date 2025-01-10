@@ -117,6 +117,10 @@ func getTVShows(w http.ResponseWriter, r *http.Request) {
 		tvShows = append(tvShows, tvShow)
 	}
 
+	if len(tvShows) == 0 {
+		tvShows = make([]TVShow, 0)
+	}
+
 	w.Header().Add("Content-Type", "application/json")
 	data, err := json.Marshal(tvShows)
 	if err != nil {
@@ -151,6 +155,10 @@ func getMovies(w http.ResponseWriter, r *http.Request) {
 			panic(err)
 		}
 		movies = append(movies, m)
+	}
+
+	if len(movies) == 0 {
+		movies = make([]Movie, 0)
 	}
 
 	w.Header().Add("Content-Type", "application/json")

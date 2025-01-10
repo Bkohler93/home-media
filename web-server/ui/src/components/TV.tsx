@@ -182,10 +182,16 @@ export const TVShows: React.FC = () => {
     if (tvShows.length === 0) {
       // Fetch TV shows from the server
       fetch(import.meta.env.VITE_BASE_URL + ":8080/tv_shows")
-        .then((response) => response.json())
+        .then((response) =>
+          response.json().catch((err) => {
+            console.log(err);
+            setTVShows([]);
+            return;
+          })
+        )
         .catch((err) => console.log("error fetching tv shows " + err))
         .then((res: TVResponse[]) => {
-          if (res.length == 0) {
+          if (res == undefined || res.length == 0) {
             setTVShows([]);
             return;
           }
@@ -234,13 +240,9 @@ export const TVShows: React.FC = () => {
             }
           });
           setTVShows(tvShows);
-        })
-        .catch((err) => {
-          console.log(err);
-          setTVShows([]);
         });
     }
-  }, [tvShows, setTVShows]);
+  }, []);
 
   const handleShowClick = (show: TVShow) => {
     setSelectedShow(show);
