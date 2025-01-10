@@ -234,6 +234,10 @@ export const TVShows: React.FC = () => {
             }
           });
           setTVShows(tvShows);
+        })
+        .catch((err) => {
+          console.log(err);
+          setTVShows([]);
         });
     }
   }, [tvShows, setTVShows]);
