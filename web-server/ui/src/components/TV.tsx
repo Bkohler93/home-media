@@ -8,41 +8,6 @@ import {
 import ReactPlayer from "react-player";
 import { useNavigate } from "react-router-dom";
 
-/*
-[
-  {
-    "id":1,
-    "name": "name",
-    "seasonNumber": 3,
-    "episodeNumber": 2,
-    "filePath": "file/path.mp4",
-    "releaseYear": 2024,
-    "imgUrl": "img.url"
-  }
-]
-
-TRANSFORM INTO
-
-[
-  {
-    "id": 1,
-    "name": "name",
-    "imgUrl": "img.url"
-    "seasons": [
-      {
-        "seasonNumber": 3,
-        "episodes": [
-          {
-            "episodeNumber": 2,
-            "filePath": "file/path.mp4",
-          } 
-        ]
-      } 
-    ]
-  }
-]
-*/
-
 interface TVResponse {
   id: number;
   name: string;

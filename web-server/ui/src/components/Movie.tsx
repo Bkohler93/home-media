@@ -17,7 +17,7 @@ export const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
           console.log(err);
         });
     });
-  });
+  }, []);
 
   if (!movie) return <div>Movie not found</div>;
   return (
