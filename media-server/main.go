@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/rpc"
 	"os"
 	"strconv"
 	"strings"
@@ -169,7 +170,11 @@ func main() {
 				}
 
 				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_S%s_E%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
-				if err := storeTV(tvData, fileUrl); err != nil {
+				rpcTVStorer := RPCTVStorer{
+					serverAddress: "web:1234",
+				}
+
+				if err := rpcTVStorer.storeTV(tvData, fileUrl); err != nil {
 					log.Printf("failed to store movie data - %v\n", err)
 				}
 
@@ -261,7 +266,30 @@ func getMovieData(r io.Reader) MovieMetaData {
 	return m
 }
 
-func storeTV(t TVMetaData, urlPath string) error {
+type TVStorer interface {
+	storeTV(TVMetaData, string) error
+}
+
+type DBTVStorer struct {
+	*sql.DB
+}
+
+type RPCTVStorer struct {
+	serverAddress string
+	port          string
+}
+
+func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
+	client, err := rpc.NewClient(s.serverAddress, s.port)
+	if err != nil {
+		return err
+	}
+
+	client.CallStoreTVShow()
+	return nil
+}
+
+func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
 	seasonNumber, _ := strconv.Atoi(t.SeasonNumber)
 	episodeNumber, _ := strconv.Atoi(t.EpisodeNumber)
 	releaseYear, _ := strconv.Atoi(t.ReleaseYear)
