@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 
+	"github.com/bkohler93/home-media/rpc"
+
 	"github.com/bkohler93/home-media/web-server/ui"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -182,6 +184,32 @@ func getMovies(w http.ResponseWriter, r *http.Request) {
 	w.Write(data)
 }
 
-func runRPCServer() {
+type MediaDBService struct{}
 
+func (m *MediaDBService) StoreTVShow(args *rpc.StoreTVArgs, reply *rpc.StoreTVReply) error {
+	if _, err := db.Exec(`
+		INSERT INTO tv_shows 
+		(name, season_number, file_path, episode_number, release_year)
+		VALUES ($1,$2,$3,$4,$5)
+	`, args.TVData.Name, args.TVData.SeasonNumber, args.TVData.FilePath, args.TVData.EpisodeNumber, args.TVData.ReleaseYear); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (m *MediaDBService) StoreMovie(args *rpc.StoreMovieArgs, reply *rpc.StoreMovieReply) error {
+	if _, err := db.Exec(`
+		INSERT INTO movies
+		(title, release_year, file_path)	
+		VALUES ($1,$2,$3)
+	`, args.MovieData.Name, args.MovieData.ReleaseYear, args.MovieData.FilePath); err != nil {
+		return err
+	}
+	return nil
+}
+
+func runRPCServer() {
+	if err := rpc.ListenAndServe(":1234", &MediaDBService{}); err != nil {
+		panic(err)
+	}
 }

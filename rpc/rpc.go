@@ -22,6 +22,18 @@ type TVData struct {
 
 type StoreTVReply struct{}
 
+type StoreMovieArgs struct {
+	MovieData MovieData
+}
+
+type MovieData struct {
+	Name        string
+	ReleaseYear int
+	FilePath    string
+}
+
+type StoreMovieReply struct{}
+
 type Client struct {
 	*rpc.Client
 }
@@ -31,9 +43,9 @@ func NewClient(serverAddress, port string) (*Client, error) {
 	return &Client{client}, err
 }
 
-func (c *Client) CallStoreTVShow(args StoreTVArgs, reply *StoreTVReply) error {
+func (c *Client) Call(proc string, args StoreTVArgs, reply *StoreTVReply) error {
 	ch := make(chan *rpc.Call)
-	c.Go("Something.StoreTVShow", args, reply, ch)
+	c.Go(proc, args, reply, ch)
 
 	select {
 	case <-ch:

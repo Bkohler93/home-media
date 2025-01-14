@@ -300,7 +300,7 @@ func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
 		},
 	}
 	var reply *rpc.StoreTVReply
-	return client.CallStoreTVShow(args, reply)
+	return client.Call("MediaDBService.StoreTVShow", args, reply)
 }
 
 func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
@@ -318,10 +318,42 @@ func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
 	return nil
 }
 
-func storeMovie(m MovieMetaData, urlPath string) error {
+type MovieStorer interface {
+	storeMovie(MovieMetaData, string) error
+}
+
+type DBMovieStorer struct {
+	*sql.DB
+}
+
+type RPCMovieStorer struct {
+	serverAddress string
+	port          string
+}
+
+func (s *RPCMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
 	releaseYear, _ := strconv.Atoi(m.ReleaseYear)
 
-	if _, err := db.Exec(`
+	client, err := rpc.NewClient(s.serverAddress, s.port)
+	if err != nil {
+		return err
+	}
+
+	args := rpc.StoreMovieArgs{
+		MovieData: rpc.MovieData{
+			Name:        m.Name,
+			ReleaseYear: releaseYear,
+			FilePath:    urlPath,
+		},
+	}
+	var reply *rpc.StoreMovieReply
+	return client.Call("MediaDBService.StoreMovie", args, reply)
+}
+
+func (s *DBMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
+	releaseYear, _ := strconv.Atoi(m.ReleaseYear)
+
+	if _, err := s.Exec(`
 		INSERT INTO movies
 		(title, release_year, file_path)	
 		VALUES ($1,$2,$3)
