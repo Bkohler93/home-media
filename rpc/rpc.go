@@ -43,7 +43,7 @@ func (c *Client) CallStoreTVShow(args StoreTVArgs, reply *StoreTVReply) error {
 	}
 }
 
-func ListenToServer(port string, handlers ...any) error {
+func ListenAndServe(port string, handlers ...any) error {
 	for _, h := range handlers {
 		rpc.Register(h)
 	}
