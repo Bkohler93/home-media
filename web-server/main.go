@@ -9,7 +9,6 @@ import (
 	"sync"
 
 	"github.com/bkohler93/home-media/rpc"
-
 	"github.com/bkohler93/home-media/web-server/ui"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"

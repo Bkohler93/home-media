@@ -123,7 +123,12 @@ func main() {
 				}
 
 				urlPath := fmt.Sprintf("/stream/movies/%s_%s.mp4", underscoreName, movieData.ReleaseYear)
-				if err := storeMovie(movieData, urlPath); err != nil {
+
+				ms := RPCMovieStorer{
+					serverAddress: "web",
+					port:          ":1234",
+				}
+				if err := ms.storeMovie(movieData, urlPath); err != nil {
 					log.Printf("failed to store movie data - %v\n", err)
 				}
 
@@ -172,7 +177,8 @@ func main() {
 
 				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_S%s_E%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
 				rpcTVStorer := RPCTVStorer{
-					serverAddress: "web:1234",
+					serverAddress: "web",
+					port:          ":1234",
 				}
 
 				if err := rpcTVStorer.storeTV(tvData, fileUrl); err != nil {

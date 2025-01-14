@@ -43,7 +43,7 @@ func NewClient(serverAddress, port string) (*Client, error) {
 	return &Client{client}, err
 }
 
-func (c *Client) Call(proc string, args StoreTVArgs, reply *StoreTVReply) error {
+func (c *Client) Call(proc string, args any, reply any) error {
 	ch := make(chan *rpc.Call)
 	c.Go(proc, args, reply, ch)
 
