@@ -1,5 +1,7 @@
 github.com/Acconut/go-httptest-recorder v1.0.0 h1:TAv2dfnqp/l+SUvIaMAUK4GeN4+wqb6KZsFFFTGhoJg=
 github.com/Acconut/go-httptest-recorder v1.0.0/go.mod h1:CwQyhTH1kq/gLyWiRieo7c0uokpu3PXeyF/nZjUNtmM=
+github.com/bkohler93/home-media/rpc v0.0.0-20250114070302-c39a06fc67d7 h1:v/Gwwj1dm0Qrb/mN/bIEwgjsutltHay0DIJxN0eTSR0=
+github.com/bkohler93/home-media/rpc v0.0.0-20250114070302-c39a06fc67d7/go.mod h1:VGx66W6PER8pzb3bSbUb3BjZjQJ04McS1+S8BentG3Q=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/go-chi/chi/v5 v5.2.0 h1:Aj1EtB0qR2Rdo2dG4O94RIU35w2lvQSj6BRA4+qwFL0=

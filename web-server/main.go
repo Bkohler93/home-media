@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 
 	"github.com/bkohler93/home-media/web-server/ui"
 	"github.com/go-chi/chi/v5"
@@ -17,6 +18,7 @@ import (
 const port = "8080"
 
 var db *sql.DB
+var dbmu sync.Mutex
 
 func main() {
 	var err error
@@ -25,6 +27,9 @@ func main() {
 		panic(err)
 	}
 	defer db.Close()
+
+	go runRPCServer()
+
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 	r.Use(cors.AllowAll().Handler)
@@ -66,6 +71,9 @@ func deleteTVShow(w http.ResponseWriter, r *http.Request) {
 
 func getMovie(w http.ResponseWriter, r *http.Request) {
 	id := chi.URLParam(r, "id")
+
+	dbmu.Lock()
+	defer dbmu.Unlock()
 	rows, err := db.Query(`
 	SELECT * FROM movies WHERE id = $1;	
 	`, id)
@@ -103,6 +111,8 @@ type TVShow struct {
 func getTVShows(w http.ResponseWriter, r *http.Request) {
 	var tvShows []TVShow
 
+	dbmu.Lock()
+	defer dbmu.Unlock()
 	rows, err := db.Query(`
 	SELECT * FROM tv_shows;	
 	`)
@@ -140,6 +150,9 @@ type Movie struct {
 
 func getMovies(w http.ResponseWriter, r *http.Request) {
 	var movies []Movie
+
+	dbmu.Lock()
+	defer dbmu.Unlock()
 	rows, err := db.Query(`
 	SELECT * FROM movies	
 	`)
@@ -167,4 +180,8 @@ func getMovies(w http.ResponseWriter, r *http.Request) {
 		panic(err)
 	}
 	w.Write(data)
+}
+
+func runRPCServer() {
+
 }

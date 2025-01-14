@@ -1,6 +1,12 @@
 package rpc
 
-import "net/rpc"
+import (
+	"errors"
+	"net"
+	"net/http"
+	"net/rpc"
+	"time"
+)
 
 type StoreTVArgs struct {
 	TVData TVData
@@ -26,5 +32,26 @@ func NewClient(serverAddress, port string) (*Client, error) {
 }
 
 func (c *Client) CallStoreTVShow(args StoreTVArgs, reply *StoreTVReply) error {
-	return c.Call("Something.StoreTVShow", args, reply)
+	ch := make(chan *rpc.Call)
+	c.Go("Something.StoreTVShow", args, reply, ch)
+
+	select {
+	case <-ch:
+		return nil
+	case <-time.After(time.Second * 5):
+		return errors.New("error calling procedure")
+	}
+}
+
+func ListenToServer(port string, handlers ...any) error {
+	for _, h := range handlers {
+		rpc.Register(h)
+	}
+	rpc.HandleHTTP()
+	l, err := net.Listen("tcp", port)
+	if err != nil {
+		return err
+	}
+	go http.Serve(l, nil)
+	return nil
 }

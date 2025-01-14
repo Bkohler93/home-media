@@ -7,7 +7,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/rpc"
 	"os"
 	"strconv"
 	"strings"
@@ -15,6 +14,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+
+	"github.com/bkohler93/home-media/rpc"
 
 	_ "github.com/lib/pq"
 	"github.com/tus/tusd/v2/pkg/filelocker"
@@ -280,13 +281,26 @@ type RPCTVStorer struct {
 }
 
 func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
+	seasonNumber, _ := strconv.Atoi(t.SeasonNumber)
+	episodeNumber, _ := strconv.Atoi(t.EpisodeNumber)
+	releaseYear, _ := strconv.Atoi(t.ReleaseYear)
+
 	client, err := rpc.NewClient(s.serverAddress, s.port)
 	if err != nil {
 		return err
 	}
 
-	client.CallStoreTVShow()
-	return nil
+	args := rpc.StoreTVArgs{
+		TVData: rpc.TVData{
+			Name:          t.Name,
+			SeasonNumber:  seasonNumber,
+			EpisodeNumber: episodeNumber,
+			ReleaseYear:   releaseYear,
+			FilePath:      urlPath,
+		},
+	}
+	var reply *rpc.StoreTVReply
+	return client.CallStoreTVShow(args, reply)
 }
 
 func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
