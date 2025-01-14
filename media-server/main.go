@@ -11,11 +11,10 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/bkohler93/home-media/media-server/rpc"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
-
-	"github.com/bkohler93/home-media/rpc"
 
 	_ "github.com/lib/pq"
 	"github.com/tus/tusd/v2/pkg/filelocker"
@@ -90,6 +89,9 @@ func main() {
 			case event := <-moviesHandler.CompleteUploads:
 				uploadedFilePath := "./uploads/" + event.Upload.ID
 				uploadedFileInfoPath := uploadedFilePath + ".info"
+				defer os.Remove(uploadedFilePath)
+				defer os.Remove(uploadedFileInfoPath)
+
 				uploadedF, err := os.Open(uploadedFilePath)
 				if err != nil {
 					log.Println("failed to open uploaded file", err)
@@ -134,12 +136,13 @@ func main() {
 
 				log.Println("Created and transferred file")
 
-				os.Remove(uploadedFilePath)
-				os.Remove(uploadedFileInfoPath)
 			case event := <-tvHandler.CompleteUploads:
 
 				uploadedFilePath := "./uploads/" + event.Upload.ID
 				uploadedFileInfoPath := uploadedFilePath + ".info"
+				defer os.Remove(uploadedFilePath)
+				defer os.Remove(uploadedFileInfoPath)
+
 				uploadedF, err := os.Open(uploadedFilePath)
 				if err != nil {
 					log.Println("failed to open uploaded file", err)
@@ -153,8 +156,6 @@ func main() {
 					continue
 				}
 				defer uploadedFileInfo.Close()
-				defer os.Remove(uploadedFilePath)
-				defer os.Remove(uploadedFileInfoPath)
 
 				tvData := getTVData(uploadedFileInfo)
 				underscoreName := strings.ReplaceAll(tvData.Name, " ", "_")
@@ -177,12 +178,12 @@ func main() {
 
 				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_S%s_E%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
 				rpcTVStorer := RPCTVStorer{
-					serverAddress: "web",
+					serverAddress: "web-server",
 					port:          ":1234",
 				}
 
 				if err := rpcTVStorer.storeTV(tvData, fileUrl); err != nil {
-					log.Printf("failed to store movie data - %v\n", err)
+					log.Printf("failed to store tv data - %v\n", err)
 				}
 
 				log.Println("Created and transferred file")
@@ -305,7 +306,7 @@ func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
 			FilePath:      urlPath,
 		},
 	}
-	var reply *rpc.StoreTVReply
+	reply := &rpc.StoreTVReply{}
 	return client.Call("MediaDBService.StoreTVShow", args, reply)
 }
 
@@ -352,7 +353,7 @@ func (s *RPCMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
 			FilePath:    urlPath,
 		},
 	}
-	var reply *rpc.StoreMovieReply
+	reply := &rpc.StoreMovieReply{}
 	return client.Call("MediaDBService.StoreMovie", args, reply)
 }
 

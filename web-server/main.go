@@ -4,11 +4,12 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"sync"
 
-	"github.com/bkohler93/home-media/rpc"
+	"github.com/bkohler93/home-media/web-server/rpc"
 	"github.com/bkohler93/home-media/web-server/ui"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -191,6 +192,7 @@ func (m *MediaDBService) StoreTVShow(args *rpc.StoreTVArgs, reply *rpc.StoreTVRe
 		(name, season_number, file_path, episode_number, release_year)
 		VALUES ($1,$2,$3,$4,$5)
 	`, args.TVData.Name, args.TVData.SeasonNumber, args.TVData.FilePath, args.TVData.EpisodeNumber, args.TVData.ReleaseYear); err != nil {
+		log.Println(err)
 		return err
 	}
 	return nil
@@ -208,7 +210,8 @@ func (m *MediaDBService) StoreMovie(args *rpc.StoreMovieArgs, reply *rpc.StoreMo
 }
 
 func runRPCServer() {
-	if err := rpc.ListenAndServe(":1234", &MediaDBService{}); err != nil {
+	s := new(MediaDBService)
+	if err := rpc.ListenAndServe(":1234", s); err != nil {
 		panic(err)
 	}
 }

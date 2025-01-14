@@ -17,6 +17,8 @@ services:
       context: ./media-server
     ports:
       - "8081:8081"
+    expose:
+      - "1234"
     volumes:
       - ${MEDIA_HOST_PATH}:/app/media
     environment:
@@ -24,6 +26,7 @@ services:
       - DATABASE_URL=postgres://user:password@db:5432/media
     depends_on:
       - db
+      - web-server
     restart: unless-stopped
 
   db:
