@@ -5,13 +5,13 @@ FROM node:22 AS ui-build
 WORKDIR /ui
 
 # copy dependency files
-COPY ui/package.json ui/yarn.lock ./
+COPY web-server/ui/package.json web-server/ui/yarn.lock ./
 
 # install dependencies
 RUN yarn install
 
 # copy ui files
-COPY ui/ ./
+COPY web-server/ui/ .
 
 # Pass the environment variable to the Vite build process
 ARG BASE_URL
@@ -28,19 +28,25 @@ RUN yarn build
 FROM golang:alpine AS go-build
 
 # Set working directory
-WORKDIR /go/src/app
+WORKDIR /home-media
+
+# copy go mod file
+COPY go.mod .
 
 # copy source code
-COPY . .
+COPY ./web-server ./web-server
+COPY ./shared ./shared
 
 # copy React app from ui-build step
-COPY --from=ui-build /ui/dist /go/src/app/ui/dist
+COPY --from=ui-build /ui/dist web-server/ui/dist
+
+RUN ls -l .
 
 # Install dependencies
 RUN go mod tidy
 
 # Build go app
-RUN go build -o /go/bin/app
+RUN cd web-server && go build -o /app
 
 # Stage 3: Final image
 FROM alpine:latest
@@ -52,7 +58,7 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 # Copy Go binary from build stage
-COPY --from=go-build /go/bin/app /app
+COPY --from=go-build /app .
 
 # Expose port
 EXPOSE 8080

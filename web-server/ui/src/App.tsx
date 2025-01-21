@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import "./App.css";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
@@ -11,13 +11,34 @@ import {
   TVShowsProvider,
 } from "./components/TV";
 import { Upload } from "./components/Upload";
+import { AuthProvider } from "./providers/auth";
+import { useAuth } from "./hooks/auth";
+import { AuthComponent } from "./components/Auth";
 
-const App: React.FC = () => {
-  return (
-    <BrowserRouter>
+const AppContent: React.FC = () => {
+  const { isAuthenticated, login } = useAuth();
+
+  useEffect(() => {
+    checkAuth();
+  }, []);
+
+  const checkAuth = async () => {
+    const response = await fetch(import.meta.env.VITE_BASE_URL + ":8080/auth", {
+      method: "POST",
+    });
+
+    if (response.status !== 200) {
+      console.log("not authorized yet");
+      return;
+    }
+    login();
+  };
+
+  if (isAuthenticated) {
+    return (
       <Layout>
         <Routes>
-          <Route path="/" element={<Movies />} />
+          <Route path="/movies" element={<Movies />} />
           {/* <Route path="/tv-shows" element={<TVShows />} /> */}
           <Route
             path="/tv-shows/*"
@@ -42,7 +63,19 @@ const App: React.FC = () => {
           <Route path="/upload" element={<Upload />} />
         </Routes>
       </Layout>
-    </BrowserRouter>
+    );
+  }
+
+  return <AuthComponent />;
+};
+
+const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </AuthProvider>
   );
 };
 

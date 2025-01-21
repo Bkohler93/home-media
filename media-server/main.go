@@ -11,12 +11,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/bkohler93/home-media/media-server/rpc"
+	"github.com/bkohler93/home-media/shared/rpc"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 
-	_ "github.com/lib/pq"
 	"github.com/tus/tusd/v2/pkg/filelocker"
 	"github.com/tus/tusd/v2/pkg/filestore"
 	tusd "github.com/tus/tusd/v2/pkg/handler"
@@ -25,24 +24,21 @@ import (
 const port = "8081"
 
 var (
-	db       *sql.DB
 	mediaDir string
 )
 
 func main() {
-	var err error
-	db, err = sql.Open("postgres", "user=user password=password host=db port=5432 dbname=media sslmode=disable")
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close()
-
 	// tusd
 	store := filestore.New("./uploads")
 	locker := filelocker.New("./uploads")
 	composer := tusd.NewStoreComposer()
 	store.UseIn(composer)
 	locker.UseIn(composer)
+
+	//rpc client
+	//serverAddress: "web-server",
+	//	port:          ":1234",
+	rpcClient, err := rpc.NewClient("web-server", "1234")
 
 	moviesHandler, err := tusd.NewHandler(tusd.Config{
 		StoreComposer:         composer,
@@ -127,8 +123,7 @@ func main() {
 				urlPath := fmt.Sprintf("/stream/movies/%s_%s.mp4", underscoreName, movieData.ReleaseYear)
 
 				ms := RPCMovieStorer{
-					serverAddress: "web",
-					port:          ":1234",
+					client: rpcClient,
 				}
 				if err := ms.storeMovie(movieData, urlPath); err != nil {
 					log.Printf("failed to store movie data - %v\n", err)
@@ -177,9 +172,8 @@ func main() {
 				}
 
 				fileUrl := fmt.Sprintf("/stream/tv/%s/%s_S%s_E%s_%s.mp4", underscoreName, underscoreName, tvData.SeasonNumber, tvData.EpisodeNumber, tvData.ReleaseYear)
-				rpcTVStorer := RPCTVStorer{
-					serverAddress: "web-server",
-					port:          ":1234",
+				rpcTVStorer := RPCTVStore{
+					client: rpcClient,
 				}
 
 				if err := rpcTVStorer.storeTV(tvData, fileUrl); err != nil {
@@ -282,20 +276,19 @@ type DBTVStorer struct {
 	*sql.DB
 }
 
-type RPCTVStorer struct {
-	serverAddress string
-	port          string
+type RPCTVStore struct {
+	client *rpc.Client
 }
 
-func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
+func (s RPCTVStore) storeTV(t TVMetaData, urlPath string) error {
 	seasonNumber, _ := strconv.Atoi(t.SeasonNumber)
 	episodeNumber, _ := strconv.Atoi(t.EpisodeNumber)
 	releaseYear, _ := strconv.Atoi(t.ReleaseYear)
 
-	client, err := rpc.NewClient(s.serverAddress, s.port)
-	if err != nil {
-		return err
-	}
+	//client, err := rpc.NewClient(s.serverAddress, s.port)
+	//if err != nil {
+	//	return err
+	//}
 
 	args := rpc.StoreTVArgs{
 		TVData: rpc.TVData{
@@ -307,44 +300,43 @@ func (s RPCTVStorer) storeTV(t TVMetaData, urlPath string) error {
 		},
 	}
 	reply := &rpc.StoreTVReply{}
-	return client.Call("MediaDBService.StoreTVShow", args, reply)
+	return s.client.Call("MediaRPCService.StoreTVShow", args, reply)
 }
 
-func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
-	seasonNumber, _ := strconv.Atoi(t.SeasonNumber)
-	episodeNumber, _ := strconv.Atoi(t.EpisodeNumber)
-	releaseYear, _ := strconv.Atoi(t.ReleaseYear)
-
-	if _, err := db.Exec(`
-		INSERT INTO tv_shows 
-		(name, season_number, file_path, episode_number, release_year)
-		VALUES ($1,$2,$3,$4,$5)
-	`, t.Name, seasonNumber, urlPath, episodeNumber, releaseYear); err != nil {
-		return err
-	}
-	return nil
-}
+//func (db DBTVStorer) storeTV(t TVMetaData, urlPath string) error {
+//	seasonNumber, _ := strconv.Atoi(t.SeasonNumber)
+//	episodeNumber, _ := strconv.Atoi(t.EpisodeNumber)
+//	releaseYear, _ := strconv.Atoi(t.ReleaseYear)
+//
+//	if _, err := db.Exec(`
+//		INSERT INTO tv_shows
+//		(name, season_number, file_path, episode_number, release_year)
+//		VALUES ($1,$2,$3,$4,$5)
+//	`, t.Name, seasonNumber, urlPath, episodeNumber, releaseYear); err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 type MovieStorer interface {
 	storeMovie(MovieMetaData, string) error
 }
 
-type DBMovieStorer struct {
-	*sql.DB
-}
+//type DBMovieStorer struct {
+//	*sql.DB
+//}
 
 type RPCMovieStorer struct {
-	serverAddress string
-	port          string
+	client *rpc.Client
 }
 
 func (s *RPCMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
 	releaseYear, _ := strconv.Atoi(m.ReleaseYear)
 
-	client, err := rpc.NewClient(s.serverAddress, s.port)
-	if err != nil {
-		return err
-	}
+	//client, err := rpc.NewClient(s.serverAddress, s.port)
+	//if err != nil {
+	//	return err
+	//}
 
 	args := rpc.StoreMovieArgs{
 		MovieData: rpc.MovieData{
@@ -354,18 +346,18 @@ func (s *RPCMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
 		},
 	}
 	reply := &rpc.StoreMovieReply{}
-	return client.Call("MediaDBService.StoreMovie", args, reply)
+	return s.client.Call("MediaRPCService.StoreMovie", args, reply)
 }
 
-func (s *DBMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
-	releaseYear, _ := strconv.Atoi(m.ReleaseYear)
-
-	if _, err := s.Exec(`
-		INSERT INTO movies
-		(title, release_year, file_path)	
-		VALUES ($1,$2,$3)
-	`, m.Name, releaseYear, urlPath); err != nil {
-		return err
-	}
-	return nil
-}
+//func (s *DBMovieStorer) storeMovie(m MovieMetaData, urlPath string) error {
+//	releaseYear, _ := strconv.Atoi(m.ReleaseYear)
+//
+//	if _, err := s.Exec(`
+//		INSERT INTO movies
+//		(title, release_year, file_path)
+//		VALUES ($1,$2,$3)
+//	`, m.Name, releaseYear, urlPath); err != nil {
+//		return err
+//	}
+//	return nil
+//}

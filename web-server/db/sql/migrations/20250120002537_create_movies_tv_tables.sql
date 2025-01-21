@@ -1,3 +1,5 @@
+-- +goose Up
+-- +goose StatementBegin
 CREATE TABLE movies (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
@@ -15,3 +17,10 @@ CREATE TABLE tv_shows (
     release_year INT NOT NULL,
     img_url TEXT DEFAULT ''
 );
+-- +goose StatementEnd
+
+-- +goose Down
+-- +goose StatementBegin
+DROP TABLE movies;
+DROP TABLE tv_shows;
+-- +goose StatementEnd

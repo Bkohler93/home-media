@@ -44,16 +44,19 @@ type Client struct {
 }
 
 func NewClient(serverAddress, port string) (*Client, error) {
-	client, err := rpc.DialHTTP("tcp", serverAddress+port)
+	client, err := rpc.DialHTTP("tcp", serverAddress+":"+port)
 	return &Client{client}, err
 }
 
 func (c *Client) Call(proc string, args any, reply any) error {
-	ch := make(chan *rpc.Call)
-	c.Go(proc, args, reply, ch)
+	var ch chan *rpc.Call
+	call := c.Go(proc, args, reply, ch)
 
 	select {
-	case <-ch:
+	case <-call.Done:
+		if call.Error != nil {
+			return errors.New("error calling procedure: " + call.Error.Error())
+		}
 		return nil
 	case <-time.After(time.Second * 5):
 		return errors.New("error calling procedure")
@@ -65,12 +68,17 @@ func ListenAndServe(port string, handlers ...any) error {
 		rpc.Register(h)
 	}
 	rpc.HandleHTTP()
-	l, err := net.Listen("tcp", port)
+	l, err := net.Listen("tcp", ":"+port)
 	if err != nil {
 		return err
 	}
 
-	log.Println("Listening on port", port)
-	go http.Serve(l, nil)
+	log.Println("RPC server listening on port", port)
+	go func() {
+		err := http.Serve(l, nil)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
 	return nil
 }

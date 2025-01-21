@@ -24,6 +24,9 @@ go.work.sum
 # env file
 .env
 
+# IDE
+.idea
+
 # media-server
 /media-server/media
 /media-server/bin
