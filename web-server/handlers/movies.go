@@ -7,9 +7,46 @@ import (
 	"net/http"
 	"strconv"
 
+	db "github.com/bkohler93/home-media/web-server/db/go"
 	"github.com/bkohler93/home-media/web-server/models"
 	"github.com/go-chi/chi/v5"
 )
+
+func (h *Handler) PostMovie(w http.ResponseWriter, r *http.Request) {
+	movie := struct {
+		Title       string `json:"title"`
+		ReleaseYear int    `json:"releaseYear"`
+		FilePath    string `json:"filePath"`
+	}{}
+	err := json.NewDecoder(r.Body).Decode(&movie)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("bad request - %v", err), http.StatusBadRequest)
+		return
+	}
+
+	m, err := h.q.CreateMovie(context.Background(), db.CreateMovieParams{
+		Title:       movie.Title,
+		ReleaseYear: int32(movie.ReleaseYear),
+		FilePath:    movie.FilePath,
+	})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error creating movie - %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		Id int `json:"id"`
+	}{
+		Id: int(m.ID),
+	}
+
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error encoding new movie - %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
 
 func (h *Handler) GetMovies(w http.ResponseWriter, r *http.Request) {
 	username := r.Context().Value("username").(string)

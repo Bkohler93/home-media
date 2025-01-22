@@ -20,12 +20,17 @@ func (h *Handler) RegisterApiRoutes(r *chi.Mux) {
 
 	r.Group(func(r chi.Router) {
 		r.Use(middleware.RequireAuth)
+
+		r.Post("/auth", h.CheckAuth)
+
 		r.Get("/movies", h.GetMovies)
 		r.Get("/movies/{id}", h.GetMovie)
+		r.Post("/movies", h.PostMovie)
+
 		r.Get("/tv_shows", h.GetTVShows)
 		r.Delete("/tv_shows/{id}", h.DeleteTVShow)
 		r.Delete("/tv_shows/{id}/unwatch", h.UnwatchTVShow)
+		r.Post("/tv_shows", h.PostTVShow)
 		r.Post("/tv_shows/{id}/watch", h.WatchTVShow)
-		r.Post("/auth", h.CheckAuth)
 	})
 }

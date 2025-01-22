@@ -13,6 +13,47 @@ import (
 	"github.com/go-chi/chi/v5"
 )
 
+func (h *Handler) PostTVShow(w http.ResponseWriter, r *http.Request) {
+	tvShow := struct {
+		Name          string `json:"name"`
+		SeasonNumber  int    `json:"seasonNumber"`
+		FilePath      string `json:"filePath"`
+		EpisodeNumber int    `json:"episodeNumber"`
+		ReleaseYear   int    `json:"releaseYear"`
+	}{}
+
+	err := json.NewDecoder(r.Body).Decode(&tvShow)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("bad request - %v", err), http.StatusBadRequest)
+		return
+	}
+
+	t, err := h.q.CreateTVShow(context.Background(), db.CreateTVShowParams{
+		Name:          tvShow.Name,
+		SeasonNumber:  int32(tvShow.SeasonNumber),
+		FilePath:      tvShow.FilePath,
+		EpisodeNumber: int32(tvShow.EpisodeNumber),
+		ReleaseYear:   int32(tvShow.ReleaseYear),
+	})
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error creating tv show - %v", err), http.StatusInternalServerError)
+		return
+	}
+
+	resp := struct {
+		Id int `json:"id"`
+	}{
+		Id: int(t.ID),
+	}
+
+	err = json.NewEncoder(w).Encode(resp)
+	if err != nil {
+		http.Error(w, fmt.Sprintf("error encoding new tv show - %v", err), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusCreated)
+}
+
 func (h *Handler) WatchTVShow(w http.ResponseWriter, r *http.Request) {
 	showId := chi.URLParam(r, "id")
 	sId, _ := strconv.Atoi(showId)
