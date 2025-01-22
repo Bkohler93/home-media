@@ -104,6 +104,7 @@ export const TVPlayer: React.FC = () => {
 
 export const Episodes: React.FC = () => {
   const { selectedShow, selectedSeason } = useTVShows();
+  selectedSeason?.episodes.sort((a, b) => a.episodeNumber - b.episodeNumber);
 
   return (
     <div>
@@ -190,6 +191,8 @@ export const Seasons: React.FC = () => {
       }/episodes`
     );
   };
+
+  selectedShow?.seasons.sort((a, b) => a.seasonNumber - b.seasonNumber);
 
   return (
     <div>
