@@ -53,7 +53,7 @@ export const TVPlayer: React.FC = () => {
       }
       const currentTime = player.getCurrentTime();
       const totalTime = player.getDuration();
-      if (currentTime / totalTime > 0.95) {
+      if (currentTime / totalTime > 0.9) {
         setHasFinishedWatching(true);
       }
     }, 1000);
