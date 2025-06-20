@@ -13,13 +13,11 @@ RUN yarn install
 # copy ui files
 COPY web-server/ui/ .
 
-# Pass the environment variable to the Vite build process
+# Pass the environment variables to the Vite build process
 ARG BASE_URL
 ARG VITE_BASE_URL 
 ENV VITE_BASE_URL=${BASE_URL}
 
-RUN echo "VITE_BASE_URL is: $VITE_BASE_URL"
-RUN echo "BASE_URL is: ${BASE_URL}"
 
 # build React app
 RUN yarn build
@@ -61,7 +59,7 @@ WORKDIR /app
 COPY --from=go-build /app .
 
 # Expose port
-EXPOSE 8080
+EXPOSE 80
 
 # Run the web server
 CMD ["/app/app"]

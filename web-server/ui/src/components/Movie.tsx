@@ -38,7 +38,7 @@ export const MoviePlayer: React.FC<{ id: string }> = ({ id }) => {
   }, [hasFinishedWatching, intervalId]);
 
   useEffect(() => {
-    fetch(import.meta.env.VITE_BASE_URL + ":8080/movies/" + id).then((res) => {
+    fetch(import.meta.env.VITE_BASE_URL + ":80/movies/" + id).then((res) => {
       res
         .json()
         .then((data: Movie) => {
@@ -85,7 +85,7 @@ export const Movies: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
 
   useEffect(() => {
-    fetch(import.meta.env.VITE_BASE_URL + ":8080/movies").then((res) => {
+    fetch(import.meta.env.VITE_BASE_URL + ":80/movies").then((res) => {
       res
         .json()
         .then((data: Movie[]) => {

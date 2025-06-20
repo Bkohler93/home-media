@@ -68,7 +68,7 @@ export const TVPlayer: React.FC = () => {
     if (hasFinishedWatching) {
       clearInterval(intervalId);
       fetch(
-        `${import.meta.env.VITE_BASE_URL}:8080/tv_shows/${
+        `${import.meta.env.VITE_BASE_URL}:80/tv_shows/${
           selectedEpisode!.id
         }/watch`,
         {
@@ -135,7 +135,7 @@ const EpisodeListItem: React.FC<Episode> = (episode) => {
   };
 
   const handleDeleteEpisode = () => {
-    fetch(`${import.meta.env.VITE_BASE_URL}:8080/tv_shows/${episode.id}`, {
+    fetch(`${import.meta.env.VITE_BASE_URL}:80/tv_shows/${episode.id}`, {
       method: "DELETE",
     }).then((res) => {
       if (res.status != 200) {
@@ -150,7 +150,7 @@ const EpisodeListItem: React.FC<Episode> = (episode) => {
     const method = episode.hasWatched ? "DELETE" : "POST";
 
     fetch(
-      `${import.meta.env.VITE_BASE_URL}:8080/tv_shows/${episode.id}/${action}`,
+      `${import.meta.env.VITE_BASE_URL}:80/tv_shows/${episode.id}/${action}`,
       {
         method: method,
       }
@@ -218,7 +218,7 @@ export const TVShows: React.FC = () => {
   useEffect(() => {
     if (tvShows.length === 0) {
       // Fetch TV shows from the server
-      fetch(import.meta.env.VITE_BASE_URL + ":8080/tv_shows")
+      fetch(import.meta.env.VITE_BASE_URL + ":80/tv_shows")
         .then((response) =>
           response.json().catch((err) => {
             console.log(err);

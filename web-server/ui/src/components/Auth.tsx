@@ -37,7 +37,7 @@ export const AuthComponent: React.FC = () => {
     }
 
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + ":8080/login",
+      import.meta.env.VITE_BASE_URL + ":80/login",
       {
         method: "POST",
         body: JSON.stringify({ username: username, password: password }),
@@ -63,7 +63,7 @@ export const AuthComponent: React.FC = () => {
     }
 
     const response = await fetch(
-      import.meta.env.VITE_BASE_URL + ":8080/register",
+      import.meta.env.VITE_BASE_URL + ":80/register",
       {
         method: "POST",
         body: JSON.stringify({ username: username, password: password }),
