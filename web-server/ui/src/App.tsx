@@ -23,7 +23,7 @@ const AppContent: React.FC = () => {
   }, []);
 
   const checkAuth = async () => {
-    const response = await fetch(import.meta.env.VITE_BASE_URL + ":8080/auth", {
+    const response = await fetch(import.meta.env.VITE_BASE_URL + ":80/auth", {
       method: "POST",
     });
 

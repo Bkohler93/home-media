@@ -89,16 +89,19 @@ func (h *Handler) UserLogin(w http.ResponseWriter, r *http.Request) {
 		Name:     "authToken",
 		Value:    s,
 		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Domain: "pupflix",
+		Path: "/",
 	})
-	w.Header().Add("Content-Type", "application/json")
-	err = json.NewEncoder(w).Encode(&struct {
-		Token string `json:"token"`
-	}{
-		Token: s,
-	})
-	if err != nil {
-		http.Error(w, fmt.Sprintf("error encoding token - %v", err), http.StatusInternalServerError)
-		return
-	}
+//	w.Header().Add("Content-Type", "application/json")
+// 	err = json.NewEncoder(w).Encode(&struct {
+// 		Token string `json:"token"`
+// 	}{
+// 		Token: s,
+// 	})
+// 	if err != nil {
+// 		http.Error(w, fmt.Sprintf("error encoding token - %v", err), http.StatusInternalServerError)
+// 		return
+// 	}
 	w.WriteHeader(http.StatusOK)
 }

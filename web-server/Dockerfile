@@ -1,65 +1,54 @@
 # Stage 1: Build the Vite project using Yarn
 FROM node:22 AS ui-build
 
-# Set working directory
 WORKDIR /ui
 
-# copy dependency files
+# Copy only dependency files first
 COPY web-server/ui/package.json web-server/ui/yarn.lock ./
 
-# install dependencies
+# Install dependencies early (this gets cached if deps don't change)
 RUN yarn install
 
-# copy ui files
+# Now copy the rest of the frontend source files
 COPY web-server/ui/ .
 
-# Pass the environment variables to the Vite build process
+# Pass environment variables to Vite
 ARG BASE_URL
-ARG VITE_BASE_URL 
 ENV VITE_BASE_URL=${BASE_URL}
 
-
-# build React app
+# Build the frontend
 RUN yarn build
 
 # Stage 2: Build the Go application
 FROM golang:alpine AS go-build
 
-# Set working directory
 WORKDIR /home-media
 
-# copy go mod file
-COPY go.mod .
+# Copy Go mod files first to cache `go mod tidy`
+COPY go.mod go.sum ./
 
-# copy source code
+RUN go mod download
+
+# Now copy the rest of the source
 COPY ./web-server ./web-server
 COPY ./shared ./shared
 
-# copy React app from ui-build step
+# Copy built frontend
 COPY --from=ui-build /ui/dist web-server/ui/dist
 
-RUN ls -l .
-
-# Install dependencies
-RUN go mod tidy
-
-# Build go app
+# Build the Go binary
 RUN cd web-server && go build -o /app
 
-# Stage 3: Final image
+# Stage 3: Final Image
 FROM alpine:latest
 
-# Install packages
 RUN apk --no-cache add ca-certificates
 
-# Set working directory
 WORKDIR /app
 
-# Copy Go binary from build stage
 COPY --from=go-build /app .
 
-# Expose port
 EXPOSE 80
 
-# Run the web server
 CMD ["/app/app"]
+
