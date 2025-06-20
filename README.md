@@ -6,3 +6,21 @@ For now videos uploaded to media server must be mp4 with h264 video and aac audi
 ```
 ffmpeg -i input.mkv -c:v copy -c:a aac -b:a 192k -ac 2 output.mp4
 ```
+
+
+## Docker commands
+
+clean build:
+```
+docker compose build --no-cache
+```
+
+view logs:
+```
+docker compose logs [container name]
+```
+
+run detached:
+```
+docker compose up -d
+```

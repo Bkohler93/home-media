@@ -20,7 +20,7 @@ import (
 //go:embed db/sql/migrations/*.sql
 var embedMigrations embed.FS
 
-const port = "8080"
+const port = "80"
 
 // var db *sql.DB
 //var dbmu sync.Mutex
